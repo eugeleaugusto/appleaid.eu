@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AppleAid by DBCI GADGETS</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 40px; background: #f9f9f9; }
+    .logo { width: 100px; }
+    .btn { margin: 10px; padding: 12px 20px; font-size: 16px; background: #007aff; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    #output { margin-top: 20px; padding: 20px; border-radius: 10px; background: #eee; white-space: pre-wrap; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto; }
+  </style>
+</head>
+<body>
+  <img src="logo.png" alt="AppleAid Logo" class="logo" />
+  <h1>AppleAid Assistant</h1>
+  <p>Tap the button and ask anything about your Apple device.</p>
+  <button class="btn" onclick="startListening()">🎤 Ask with Voice</button>
+  <button class="btn" onclick="runDiagnostics()">🧠 Run Diagnostics</button>
+  <div id="output"></div>
+
+<script>
+  const output = document.getElementById('output');
+
+  // Voice Recognition
+  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = 'en-US';
+  recognition.onresult = function(event) {
+    const speech = event.results[0][0].transcript;
+    output.innerText = "You asked: " + speech + "\nThinking...";
+    askAssistant(speech);
+  };
+
+  function startListening() {
+    recognition.start();
+  }
+
+  // Chat Assistant using OpenAI API
+  async function askAssistant(question) {
+    try {
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + (window.OPENAI_API_KEY || "YOUR_API_KEY")
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [{ role: "user", content: question }]
+        })
+      });
+      const data = await res.json();
+      output.innerText = "Assistant: " + data.choices[0].message.content;
+    } catch (err) {
+      output.innerText = "Error contacting assistant: " + err.message;
+    }
+  }
+
+  // Device Diagnostics
+  function runDiagnostics() {
+    let diag = "📱 Device Diagnostics:\n";
+    diag += "Platform: " + navigator.platform + "\n";
+    diag += "User Agent: " + navigator.userAgent + "\n";
+    navigator.getBattery?.().then(battery => {
+      diag += "Battery Level: " + Math.round(battery.level * 100) + "%\n";
+      output.innerText = diag;
+    }).catch(() => output.innerText = diag + "\nBattery info not available.");
+  }
+</script>
+</body>
+</html>
